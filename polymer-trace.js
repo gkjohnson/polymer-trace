@@ -392,10 +392,8 @@
 
     // hijack the console functions
     const consoleFuncs = ['log', 'error', 'warning', 'groupCollased', 'group', 'groupEnd', 'dir', 'time', 'timeEnd']
-    const origConsole = {}
     consoleFuncs.forEach(key => {
         const origFunc = console[key]
-        origConsole[key] = origFunc
         console[key] = function() {
             if(settings.hijackLogs) stackTracer.addCalledFunc(() => origFunc(...arguments))
             else origFunc(...arguments)
