@@ -215,58 +215,76 @@
     }    
 
     /* Surrogate Function Application */
-    // Creates a proxy function for the provided key
-    // on the provided object with the given key
+    // Returns a surrogate function that, when called,
+    // will call the function 'cb' with the given
+    // functions and the expected args
+    const getSurrogate = (origFunc, cb, is, key) => {
+        cb = cb || function(func, args) {
+            stackTracer.begin(is, key)
+            func(...args)
+            stackTracer.end()
+        }
 
-    // A function is called before and after the original
-    // function is called with the original arguments.
-    // A preprocess function can be provided to run on the arguments
-    const applySurrogate = (obj, key, pre, post, argpreprocess) => {
+        return function() {
+            let res = null
+            let called = 0
+
+            cb.call(this, (function() {
+                called++
+                res = origFunc.call(this, ...arguments)
+            }).bind(this), arguments)
+
+            if (called > 1) throw new Error('Function called too many times')
+            if (called < 1) throw new Error('Function called too few times')
+
+            return res
+        }
+    }
+
+    // Adds a basic surrogate function to the given object
+    // with "this" bound appropriately
+    const applySurrogate = (obj, key, cb) => {
         if (!(key in obj) || !(obj[key] instanceof Function)) return
 
         const origFunc = obj[key]
+        const newFunc = getSurrogate(origFunc, cb, obj.is, key)
+
         obj[key] = function() {
-            const processedArgs = argpreprocess ? argpreprocess.call(this, ...arguments) : arguments
-
-            if (pre) pre.call(this, ...arguments)
-            const res = origFunc.call(this, ...processedArgs)
-            if (post) post.call(this, ...arguments)
-
+            const res = newFunc.call(this, ...arguments)
             return res
         }
     }
 
     // override the debounce function so we can time the callback
     const applyDebounceSurrogate = (is, obj) => {
-
         const debounceCalls = {}
-        applySurrogate(obj, 'debounce', () => stackTracer.begin(is, 'debounce'), (key, func, time) => {
+        applySurrogate(obj, 'debounce', function(func, args) {
+            const key = args[0]
+
+            // track the debounce tally
             debounceCalls[key] = debounceCalls[key] || { tally: 0, time: 0 }
-
-            const obj = stackTracer.end({
-                msg: `function with '${key}' will be called in ${time}ms. Called ${debounceCalls[key]} times before`
-            })
-
             debounceCalls[key].tally ++
             debounceCalls[key].time = window.performance.now()
-        }, function() {
-            const key = arguments[0]
-            const func = arguments[1]
-            const time = arguments[2] || 0
 
-            arguments[1] = () => {
+            // preprocess the arguments
+            const time = args[2] || 0
+            args[1] = getSurrogate(args[1], dbcb => {
                 const delta = (window.performance.now() - debounceCalls[key].time).toFixed(3)
                 const tally = debounceCalls[key].tally
-                delete debounceCalls[key]
 
                 stackTracer.begin(is, `debounce('${key}')`)
-                func.call(this)
+                dbcb.call(this)
                 stackTracer.end({
                     msg: `debounce callback with '${key}' getting called after ${delta}ms after requesting ${time}ms. Called ${tally} times before firing`
                 })
-            }
+            })
 
-            return arguments
+            // call the functions
+            stackTracer.begin(is, 'debounce')
+            func(...args)
+            stackTracer.end({
+                msg: `function with '${key}' will be called in ${time}ms. Called ${debounceCalls[key].tally} times before`
+            })
         })
     }
 
@@ -275,36 +293,35 @@
     const applyAsyncSurrogate = (is, obj) => {
         const applyCalls = new WeakMap()
 
-        applySurrogate(obj, 'async', () => stackTracer.begin(is, 'async'), (func, time) => {
-            stackTracer.end({ msg: `async function will be called in ${time}ms` })
-            applyCalls.set(func, window.performance.now())
-        }, function() {
-            const func = arguments[0]
-            const time = arguments[1] || 0
+        applySurrogate(obj, 'async', function(func, args) {
+            const time = args[1] || 0
 
-            arguments[0] = function() {
+            args[0] = getSurrogate(args[0], cb => {
                 const delta = (window.performance.now() - applyCalls.get(func)).toFixed(3)
                 applyCalls.delete(func)
 
                 stackTracer.begin(is, 'async callback')
-                func.call(this)
+                cb.call(this)
                 stackTracer.end({ msg: `async function called after ${delta}ms after requesting ${time}ms` })
-            }
+            })
 
-            return arguments
+            stackTracer.begin(is, 'async')
+            func(...args)
+            stackTracer.end({ msg: `async function will be called in ${time}ms` })
+
         })
     }
 
     // Applies the debutg logic to the particular Polymer Template
     const applyDebug = temp => {
 
-        applySurrogate(temp, 'created', function() {
-            applyDebounceSurrogate(temp.is, this)
-            applyAsyncSurrogate(temp.is, this)
+        applySurrogate(temp, 'created', function(func, args) {
 
             stackTracer.begin(temp.is, 'created')
-        }, () => {
+            func(...args)
             stackTracer.end()
+            applyDebounceSurrogate(temp.is, this)
+            applyAsyncSurrogate(temp.is, this)
         })
 
         Object.keys(temp).forEach(key => {
@@ -321,9 +338,7 @@
 
             if (!(item instanceof Function)) return
 
-            applySurrogate(temp, key, () => stackTracer.begin(temp.is, key), () => {
-                stackTracer.end()
-            })
+            applySurrogate(temp, key)
         })
     }
 

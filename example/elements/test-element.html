@@ -6,6 +6,9 @@
 		<div>
 			<button on-click="_debounceButtonClickHandler">Run Debounce Function</button>
 		</div>
+		<div>
+			<button on-click="_asyncButtonClickHandler">Run Async Function</button>
+		</div>
 	</template>
 </dom-module>
 <script type="text/javascript">
@@ -43,6 +46,10 @@
 		/* Event Handlers */
 		_debounceButtonClickHandler: function() {
 			this.debounce('debounce-click', () => console.log('debounced!'), 1000)
+		},
+
+		_asyncButtonClickHandler: function() {
+			this.async(() => console.log('debounced!'), 500)
 		},
 
 		/* Computed Properties */
