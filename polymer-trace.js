@@ -18,6 +18,10 @@
             return `polymer-trace.js`
         },
 
+        get tallyCalls() {
+            return Polymer.debug ? Polymer.debug.tallyCalls && Polymer.debug.enable : false
+        },
+
         // Returns the color associated with thecolor setting
         getColor: type => `font-weight: normal; color:${PolymerTrace.debug.colors[type]}`,
     }
@@ -167,7 +171,7 @@
 
         // Prints out function calls that happened over the last frame
         const _flushCalls = () => {
-            const enabled = settings.enabled
+            const doTallyCalls = settings.tallyCalls
             const threshold = settings.threshold
             const keys = Object.keys(calls)
             if (keys.length > 0) {
@@ -182,7 +186,7 @@
                 arr.sort((a, b) => b.time - a.time)
 
                 if (arr.length > 0) {
-                    if (enabled) {
+                    if (doTallyCalls) {
                         console.groupCollapsed(`${arr.length} function calls intercepted last frame`)
                     }
                     arr.forEach(i => {
@@ -192,7 +196,7 @@
                         let log = '%c' + key.replace('.', '%c.')
                         log += util.pad(' ', 50 - log.length) + `%ccalled %c${tally} times for a total of %c${delta}ms`
 
-                        if (enabled) {
+                        if (doTallyCalls) {
                             console.log(log, settings.getColor('light'), settings.getColor('dark'), settings.getColor('light'), settings.getColor('dark'), settings.getColor('highlight'))
                         }
                     })
@@ -312,16 +316,32 @@
         })
     }
 
+    // wraps the addEventListener Function
+    const applyAddEventListener = (is, obj) => {
+        applySurrogate(obj, 'addEventListener', function(func, args) {
+            const evname = args[0]
+            
+            args[1] = getSurrogate(args[1], function(func, args) {
+                func.call(this, ...args)
+            })
+
+            stackTracer.begin(is, 'addEventListener')
+            func(...args)
+            stackTracer.end()
+        })
+    }
+
     // Applies the debutg logic to the particular Polymer Template
     const applyDebug = temp => {
 
         applySurrogate(temp, 'created', function(func, args) {
+            applyDebounceSurrogate(temp.is, this)
+            applyAsyncSurrogate(temp.is, this)
+            applyAddEventListener(temp.is, this)
 
             stackTracer.begin(temp.is, 'created')
             func(...args)
             stackTracer.end()
-            applyDebounceSurrogate(temp.is, this)
-            applyAsyncSurrogate(temp.is, this)
         })
 
         Object.keys(temp).forEach(key => {
@@ -343,6 +363,13 @@
     }
 
     /* Intialization */
+    // Hijack the original polymer functions
+    Polymer.dom.flush = getSurrogate(Polymer.dom.flush, func => {
+        stackTracer.begin('Polymer.dom', 'flush')
+        func()
+        stackTracer.end()
+    })
+
     const PolymerTrace = function(obj) {
         const scriptPath = util.getCallingPath()
         const elementName = obj.is
@@ -376,6 +403,7 @@ Polymer.debug = {
         
     threshold: 1,
     includeStack: true,
+    tallyCalls: true,
 
     colors: {
         light: '#90A4AE',

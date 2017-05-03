@@ -35,7 +35,11 @@
 		observers: [`_fullObserver(text, computedText, numVal)`],
 
 		/* Lifecycle Functions */
-		created: () => console.log('running created'),
+		created: function() {
+			console.log('running created')
+
+			this.addEventListener('click', e => console.log("CLICKED!!!", e, this))
+		},
 
 		ready: () => console.log('running ready'),
 
@@ -45,6 +49,7 @@
 
 		/* Event Handlers */
 		_debounceButtonClickHandler: function() {
+			Polymer.dom.flush()
 			this.debounce('debounce-click', () => console.log('debounced!'), 1000)
 		},
 
