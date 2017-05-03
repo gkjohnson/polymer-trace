@@ -1,0 +1,26 @@
+{
+  "name": "polymer-trace",
+  "version": "0.0.1",
+  "description": "A debugging library that can be grafted onto any page with Polymer Elements to expose all the functions being called on Polymer elements over the course of its lifetime",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.jpl.nasa.gov/skunkworks/polymer-trace.git"
+  },
+  "keywords": [
+    "Polymer",
+    "Debug",
+    "Debugging",
+    "Performance",
+    "Stack",
+    "Trace",
+    "Web",
+    "Components",
+    "Life",
+    "Cycle"
+  ],
+  "author": "Garrett Johnson <garrett.kjohnson@gmail.com>",
+  "license": "ISC"
+}

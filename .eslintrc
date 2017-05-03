@@ -1,0 +1,82 @@
+parser: babel-eslint
+extends:
+    - 'eslint:recommended'
+    - 'plugin:import/errors'
+    - 'plugin:import/warnings'
+env:
+    es6: true
+    browser: true
+    node: true
+    mocha: true
+rules:
+    brace-style:
+        - warn
+        - 1tbs
+        - allowSingleLine: true
+    eqeqeq:
+        - warn
+        - always
+        - null: ignore
+    indent:
+        - warn
+        - 4
+        - SwitchCase: 1
+    no-mixed-spaces-and-tabs: warn
+    quotes:
+        - warn
+        - single
+        - avoidEscape: true
+          allowTemplateLiterals: true
+    quote-props: 0
+    no-console: off
+    no-debugger: warn
+    no-var: warn
+    prefer-const: warn
+    semi:
+        - warn
+        - never
+    no-extra-semi: warn
+    no-extra-boolean-cast: warn
+    no-trailing-spaces: off
+    space-before-function-paren:
+        - warn
+        - never
+    space-in-parens: warn
+    comma-spacing: warn
+    no-spaced-func: warn
+    eol-last: off
+    no-unused-vars: warn
+    no-underscore-dangle: off
+    no-alert: warn
+    no-lone-blocks: off
+    no-empty: warn
+    no-empty-pattern: warn
+    no-unreachable: warn
+    no-constant-condition: warn
+    comma-dangle: warn
+    keyword-spacing: warn
+    key-spacing:
+        - warn
+        - beforeColon: false
+          afterColon: true
+          mode: minimum
+    arrow-spacing: warn
+    arrow-parens:
+        - warn
+        - as-needed
+    prefer-arrow-callback: off # FIXME set to 'warn' and fix resulting warnings
+    space-unary-ops: warn
+    space-before-blocks: warn
+    space-infix-ops: warn
+    no-whitespace-before-property: warn
+    spaced-comment: warn
+    curly:
+        - off
+        - multi-or-nest
+        - consistent
+    object-curly-spacing:
+        - warn
+        - always
+    object-shorthand: off # FIXME set to 'warn' when es6 becomes a thing
+    camelcase: 1
+globals: {}
