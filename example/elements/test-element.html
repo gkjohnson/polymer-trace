@@ -1,0 +1,54 @@
+<dom-module is="test-element">
+	<template>
+		<h1>[[text]]</h1>
+		<h2>[[computedText]]</h2>
+		<div>number: [[numVal]]</div>
+		<div>
+			<button on-click="_debounceButtonClickHandler">Run Debounce Function</button>
+		</div>
+	</template>
+</dom-module>
+<script type="text/javascript">
+	Polymer({
+		is: 'test-element',
+
+		properties: {
+			text: {
+				type: String,
+				value: 'test text'
+			},
+			
+			computedText: {
+				type: String,
+				computed: '_computeComputedText(text)'
+			},
+
+			numVal: {
+				type: Number,
+				value: 10
+			}
+		},
+
+		observers: [`_fullObserver(text, computedText, numVal)`],
+
+		/* Lifecycle Functions */
+		created: () => console.log('running created'),
+
+		ready: () => console.log('running ready'),
+
+		attached: () => console.log('running attached'),
+
+		detached: () => console.log('running detached'),
+
+		/* Event Handlers */
+		_debounceButtonClickHandler: function() {
+			this.debounce('debounce-click', () => console.log('debounced!'), 1000)
+		},
+
+		/* Computed Properties */
+		_computeComputedText: text => `_${text}_`,
+
+		/* Observers */
+		_fullObserver: () => console.log('running full observer'),
+	})
+</script>
