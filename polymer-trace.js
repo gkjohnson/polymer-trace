@@ -80,29 +80,35 @@
         const stack = []
         const calls = {}
 
-        const _stackBegin = () => {
-            times.push(window.performance.now())
+        const _tallyCall = (key, deltaTime) => {
+            calls[key] = calls[key] || { tally: 0, time: 0 }
+            calls[key].tally ++
+            calls[key].time += deltaTime
+        }
+
+        const _stackBegin = (is, key) => {
+            // Throw the call on the stack
+            const includeStack = settings.includeStack && times.length === 1
+            const obj = {
+                is,
+                key,
+                startTime: window.performance.now(),
+                delta: -1,
+                depth: times.length,
+                msg: '',
+                stack: includeStack ? util.getCleanCallingStack().join('\n') : '',
+            }
+
+            times.push(obj)
         }
 
         const _stackEnd = (is, key, options) => {
-            const includeStack = settings.includeStack && times.length === 1
-            const delta = window.performance.now() - times.pop()
-
-            const callsKey = `${is}.${key}`
-            calls[callsKey] = calls[callsKey] || { tally: 0, time: 0 }
-            calls[callsKey].tally ++
-            calls[callsKey].time += delta
-
-            const obj = Object.assign({
-                is: is,
-                key, 
-                delta,
-                depth: times.length,
-                msg: '',
-                stack: includeStack ? util.getCleanCallingStack().join('\n') : ''
-            }, options)
-
+            const item = times.pop()
+            const delta = window.performance.now() - item.startTime
+            const obj = Object.assign(item, { delta }, options)
             stack.push(obj)
+
+            _tallyCall(`${is}.${key}`, delta)
 
             if (times.length === 0) printStack()
         }
@@ -110,7 +116,7 @@
         /* Trace Print Functions */
         // prints a collapseable stack trace with ms timing
         const printStack = () => {
-            const threshold = PolymerTrace.debug.threshold
+            const threshold = settings.threshold
 
             // reset the stack and return if we're
             // not supposed to print anything
@@ -251,7 +257,7 @@
     const applyDebounceSurrogate = (is, obj) => {
 
         const debounceCalls = {}
-        applySurrogate(obj, 'debounce', stackTracer.begin, (key, func, time) => {
+        applySurrogate(obj, 'debounce', () => stackTracer.begin(is, 'debounce'), (key, func, time) => {
             debounceCalls[key] = debounceCalls[key] || { tally: 0, time: 0 }
 
             const obj = stackTracer.end(is, 'debounce', {
@@ -270,7 +276,7 @@
                 const tally = debounceCalls[key].tally
                 delete debounceCalls[key]
 
-                stackTracer.begin()
+                stackTracer.begin(is, `debounce('${key}')`)
                 func.call(this)
 
                 const obj = stackTracer.end(is, `debounce('${key}')`, {
@@ -289,7 +295,7 @@
     const applyAsyncSurrogate = (is, obj) => {
         const applyCalls = new WeakMap()
 
-        applySurrogate(obj, 'async', stackTracer.begin, (func, time) => {
+        applySurrogate(obj, 'async', () => stackTracer.begin(is, 'async'), (func, time) => {
             const obj = stackTracer.end(is, 'async', { msg: `async function will be called in ${time}ms` })
             applyCalls.set(func, window.performance.now())
 
@@ -302,7 +308,7 @@
                 const delta = (window.performance.now() - applyCalls.get(func)).toFixed(3)
                 applyCalls.delete(func)
 
-                stackTracer.begin()
+                stackTracer.begin(is, 'async callback')
                 func.call(this)
 
                 const obj = stackTracer.end(is, `async callback`, { msg: `async function called after ${delta}ms after requesting ${time}ms` })
@@ -320,7 +326,7 @@
             applyDebounceSurrogate(temp.is, this)
             applyAsyncSurrogate(temp.is, this)
 
-            stackTracer.begin()
+            stackTracer.begin(temp.is, 'created')
         }, () => {
             stackTracer.end(temp.is, 'created')
         })
@@ -339,7 +345,7 @@
 
             if (!(item instanceof Function)) return
 
-            applySurrogate(temp, key, stackTracer.begin, () => {
+            applySurrogate(temp, key, () => stackTracer.begin(temp.is, key), () => {
                 stackTracer.end(temp.is, key)
             })
         })
