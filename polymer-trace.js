@@ -18,8 +18,7 @@
             return `polymer-trace.js`
         },
 
-        // Returns the color associated with the
-        // color setting
+        // Returns the color associated with thecolor setting
         getColor: type => `font-weight: normal; color:${PolymerTrace.debug.colors[type]}`,
     }
 
@@ -75,105 +74,94 @@
     }
 
     /* Stack Printing */
+    // Manager of the polymer function stack
+    // stack is kept as a tree of nodes
     const stackTracer = (function() {
-        const times = []
+        let curr = null
         const stack = []
         const calls = {}
 
+        // pushes an item on to the stack
+        const _push = item => {
+            if(curr) curr.children.push(item)
+            curr = item
+            stack.push(item)
+        }
+
+        // pops a layer off of the stack
+        const _pop = () => {
+            const obj = stack.pop()
+            curr = stack[stack.length - 1] || null
+            return obj
+        }
+
+        // tallys the amount of times the given
+        // function (key) has been called
         const _tallyCall = (key, deltaTime) => {
             calls[key] = calls[key] || { tally: 0, time: 0 }
             calls[key].tally ++
             calls[key].time += deltaTime
         }
 
+        // Marks the beginning of a stack
+        // Should be matched with _stackEnd
         const _stackBegin = (is, key) => {
             // Throw the call on the stack
-            const includeStack = settings.includeStack && times.length === 1
+            const includeStack = settings.includeStack && stack.length === 0
             const obj = {
                 is,
                 key,
                 startTime: window.performance.now(),
                 delta: -1,
-                depth: times.length,
                 msg: '',
                 stack: includeStack ? util.getCleanCallingStack().join('\n') : '',
+                children: []
             }
 
-            times.push(obj)
+            _push(obj)
         }
 
-        const _stackEnd = (is, key, options) => {
-            const item = times.pop()
+        // Marks the end of a stack call
+        const _stackEnd = (options) => {
+            const item = _pop()
             const delta = window.performance.now() - item.startTime
             const obj = Object.assign(item, { delta }, options)
-            stack.push(obj)
 
-            _tallyCall(`${is}.${key}`, delta)
+            _tallyCall(`${item.is}.${item.key}`, delta)
 
-            if (times.length === 0) printStack()
+            if (stack.length === 0) _printItem(obj)
         }
 
-        /* Trace Print Functions */
-        // prints a collapseable stack trace with ms timing
-        const printStack = () => {
+        // Prints the given item as a collapsible group with
+        // its children
+        const _printItem = item => {
+            if (!settings.enabled) return
             const threshold = settings.threshold
+            const delta = item.delta.toFixed(3)
+            const asGroup = item.children.length !== 0 || item.stack
+            const doPrint = delta > threshold
 
-            // reset the stack and return if we're
-            // not supposed to print anything
-            if (!settings.enabled) {
-                stack.length = 0
-                return
-            }
-
-            const revStack = []
-
-            // iterate over all the calls
-            let curr = stack.pop()
             const colors = [settings.getColor('light'), settings.getColor('dark'), settings.getColor('highlight'), settings.getColor('dark')]
-            while (curr) {
-                const delta = curr.delta.toFixed(3)
-                const doPrint = delta > threshold || revStack.length > 0
 
-                // print if we're above our timing threshold or
-                // the parent in the stack trace has been printed
-                if (doPrint) {
+            if(doPrint) {
+                let groupText = `%c${item.is}.%c${item.key}`
+                groupText += util.pad(' ', 60 - groupText.length) + `%c${delta}ms`
+                groupText += util.pad(' ', 80 - groupText.length) + `%c${item.msg}`
+                if(asGroup) {
+                    console.groupCollapsed(groupText, ...colors)
 
-                    // create the print message
-                    let grp = `%c${curr.is}.%c${curr.key}`
-                    grp += util.pad(' ', 60 - grp.length) + `%c${delta}ms`
-                    grp += util.pad(' ', 80 - grp.length) + `%c${curr.msg}`
-
-                    const nextCurr = stack[stack.length - 1] || null
-                    const printingTrace = curr.stack && curr.depth === 0
-                    const printingChildren = nextCurr && nextCurr.depth > curr.depth
-
-                    if (printingChildren || settings.printStack) {
-
-                        console.groupCollapsed(grp, ...colors)
-
-                        if (curr.stack) {
-                            console.groupCollapsed('%cstack', settings.getColor('highlight'))
-                            console.log(`%c${curr.stack}`, settings.getColor('highlight'))
-                            console.groupEnd()
-                        }
-
-                        revStack.push({ depth: curr.depth })
-                    } else {
-                        console.log(grp, ...colors)
+                    if (item.stack) {
+                        console.groupCollapsed('%cstack', settings.getColor('highlight'))
+                        console.log(`%c${item.stack}`, settings.getColor('highlight'))
+                        console.groupEnd()
                     }
-                }
 
-                // update curr
-                curr = stack.pop()
+                    item.children.forEach(c => _printItem(c))
 
-                // close the remaining groups if our stack is
-                // finished or until we finish the children of
-                // the last group
-                while (revStack.length > 0 && (!curr || revStack[revStack.length - 1].depth >= curr.depth)) {
                     console.groupEnd()
-                    revStack.pop()
+                } else {
+                    console.log(groupText, ...colors)
                 }
-
             }
         }
 
@@ -224,12 +212,7 @@
     if (!window.Polymer) {
         console.error('Polymer not loaded')
         return
-    }
-
-    /* Variables */
-    const origPolymer = Polymer
-
-    
+    }    
 
     /* Surrogate Function Application */
     // Creates a proxy function for the provided key
@@ -260,7 +243,7 @@
         applySurrogate(obj, 'debounce', () => stackTracer.begin(is, 'debounce'), (key, func, time) => {
             debounceCalls[key] = debounceCalls[key] || { tally: 0, time: 0 }
 
-            const obj = stackTracer.end(is, 'debounce', {
+            const obj = stackTracer.end({
                 msg: `function with '${key}' will be called in ${time}ms. Called ${debounceCalls[key]} times before`
             })
 
@@ -278,12 +261,9 @@
 
                 stackTracer.begin(is, `debounce('${key}')`)
                 func.call(this)
-
-                const obj = stackTracer.end(is, `debounce('${key}')`, {
+                stackTracer.end({
                     msg: `debounce callback with '${key}' getting called after ${delta}ms after requesting ${time}ms. Called ${tally} times before firing`
                 })
-
-                printStack()
             }
 
             return arguments
@@ -296,10 +276,8 @@
         const applyCalls = new WeakMap()
 
         applySurrogate(obj, 'async', () => stackTracer.begin(is, 'async'), (func, time) => {
-            const obj = stackTracer.end(is, 'async', { msg: `async function will be called in ${time}ms` })
+            stackTracer.end({ msg: `async function will be called in ${time}ms` })
             applyCalls.set(func, window.performance.now())
-
-            if (times.length === 0) printStack()
         }, function() {
             const func = arguments[0]
             const time = arguments[1] || 0
@@ -310,9 +288,7 @@
 
                 stackTracer.begin(is, 'async callback')
                 func.call(this)
-
-                const obj = stackTracer.end(is, `async callback`, { msg: `async function called after ${delta}ms after requesting ${time}ms` })
-                printStack()
+                stackTracer.end({ msg: `async function called after ${delta}ms after requesting ${time}ms` })
             }
 
             return arguments
@@ -328,7 +304,7 @@
 
             stackTracer.begin(temp.is, 'created')
         }, () => {
-            stackTracer.end(temp.is, 'created')
+            stackTracer.end()
         })
 
         Object.keys(temp).forEach(key => {
@@ -346,7 +322,7 @@
             if (!(item instanceof Function)) return
 
             applySurrogate(temp, key, () => stackTracer.begin(temp.is, key), () => {
-                stackTracer.end(temp.is, key)
+                stackTracer.end()
             })
         })
     }
@@ -355,7 +331,6 @@
     const PolymerTrace = function(obj) {
         const scriptPath = util.getCallingPath()
         const elementName = obj.is
-        console.log(scriptPath)
         if (
             (util.testRegex(PolymerTrace.debug.include, scriptPath, true) ||
             util.testRegex(PolymerTrace.debug.include, elementName, true)) &&
@@ -372,6 +347,7 @@
         return PolymerTrace.__proto__(...arguments)
     }
 
+    const origPolymer = Polymer
     PolymerTrace.__proto__ = origPolymer
     window.Polymer = PolymerTrace
 })()
