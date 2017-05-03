@@ -46,6 +46,15 @@ Settings for Polymer-Trace live on `Polymer.debug` and can be used to control th
   // print messages. Disabling improves performance
   includeStack: true,
   
+  // Whether or not to print out the tally of different
+  // function calls over the last frame
+  tallyCalls: true,
+  
+  // Whether or not to consume log functions including 'log', 'error',
+  // 'warning', 'groupCollased', 'group', 'groupEnd', 'dir', 'time', 'timeEnd'
+  // to be wrapped up into the stack trace
+  consumeLogs: true,
+    
   // Colors to for printing
   colors: {
     light: '#90A4AE',
