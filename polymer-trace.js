@@ -22,6 +22,10 @@
             return Polymer.debug ? Polymer.debug.tallyCalls && Polymer.debug.enable : false
         },
 
+        get hijackLogs() {
+            return (Polymer.debug ? Polymer.debug.consumeLogs : false)
+        },
+
         // Returns the color associated with thecolor setting
         getColor: type => `font-weight: normal; color:${PolymerTrace.debug.colors[type]}`,
     }
@@ -92,6 +96,11 @@
             stack.push(item)
         }
 
+        const _pushLog = func => {
+            if(settings.hijackLogs && curr) curr.intermediateLogs.push(func)
+            else func()
+        }
+
         // pops a layer off of the stack
         const _pop = () => {
             const obj = stack.pop()
@@ -119,7 +128,8 @@
                 delta: -1,
                 msg: '',
                 stack: includeStack ? util.getCleanCallingStack().join('\n') : '',
-                children: []
+                children: [],
+                intermediateLogs: [] 
             }
 
             _push(obj)
@@ -140,9 +150,11 @@
         // its children
         const _printItem = item => {
             if (!settings.enabled) return
+            if (stack.length > 0) return
+
             const threshold = settings.threshold
             const delta = item.delta.toFixed(3)
-            const asGroup = item.children.length !== 0 || item.stack
+            const asGroup = item.children.length !== 0 || item.stack || item.intermediateLogs.length
             const doPrint = delta > threshold
 
             const colors = [settings.getColor('light'), settings.getColor('dark'), settings.getColor('highlight'), settings.getColor('dark')]
@@ -153,6 +165,12 @@
                 groupText += util.pad(' ', 80 - groupText.length) + `%c${item.msg}`
                 if(asGroup) {
                     console.groupCollapsed(groupText, ...colors)
+
+                    if (item.intermediateLogs.length) {
+                        console.groupCollapsed('logs')
+                        item.intermediateLogs.forEach(f => f())
+                        console.groupEnd()
+                    }
 
                     if (item.stack) {
                         console.groupCollapsed('%cstack', settings.getColor('highlight'))
@@ -171,6 +189,7 @@
 
         // Prints out function calls that happened over the last frame
         const _flushCalls = () => {
+            
             const doTallyCalls = settings.tallyCalls
             const threshold = settings.threshold
             const keys = Object.keys(calls)
@@ -209,7 +228,8 @@
 
         return {
             begin: _stackBegin,
-            end: _stackEnd
+            end: _stackEnd,
+            addCalledFunc: _pushLog
         }
     })()
 
@@ -370,6 +390,18 @@
         stackTracer.end()
     })
 
+    // hijack the console functions
+    const consoleFuncs = ['log', 'error', 'warning', 'groupCollased', 'group', 'groupEnd', 'dir', 'time', 'timeEnd']
+    const origConsole = {}
+    consoleFuncs.forEach(key => {
+        const origFunc = console[key]
+        origConsole[key] = origFunc
+        console[key] = function() {
+            if(settings.hijackLogs) stackTracer.addCalledFunc(() => origFunc(...arguments))
+            else origFunc(...arguments)
+        }
+    })
+
     const PolymerTrace = function(obj) {
         const scriptPath = util.getCallingPath()
         const elementName = obj.is
@@ -404,6 +436,7 @@ Polymer.debug = {
     threshold: 1,
     includeStack: true,
     tallyCalls: true,
+    consumeLogs: true,
 
     colors: {
         light: '#90A4AE',
