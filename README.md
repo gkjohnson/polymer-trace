@@ -5,6 +5,7 @@ Surrogate functions are created that wrap the ones defined on registered Polymer
 - `async`
 - `debounce`
 - `addEventListener`
+- `Polymer.dom.flush`
 
 ## Use
 #### Loading it
