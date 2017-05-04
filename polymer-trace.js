@@ -3,11 +3,27 @@
     /* Settings */
     const settings = {
         get includeStack(){
-            return Polymer.debug.enable && Polymer.debug.includeStack
+            return this.enabled && Polymer.debug.includeStack
         },
 
         get enabled() {
             return Polymer.debug ? Polymer.debug.enable : false
+        },
+
+        get tallyCalls() {
+            return (Polymer.debug ? Polymer.debug.tallyCalls : false) && this.enabled 
+        },
+
+        get printTrace() {
+            return (Polymer.debug ? Polymer.debug.printTrace : false) && this.enabled
+        },
+
+        get hijackLogs() {
+            return (Polymer.debug ? Polymer.debug.consumeLogs : false) && this.enabled
+        },
+
+        get validateValue() {
+            return (Polymer.debug ? Polymer.debug.validateValue : false) && this.enabled
         },
 
         get threshold() {
@@ -17,15 +33,7 @@
         get filename() {
             return `polymer-trace.js`
         },
-
-        get tallyCalls() {
-            return Polymer.debug ? Polymer.debug.tallyCalls && Polymer.debug.enable : false
-        },
-
-        get hijackLogs() {
-            return (Polymer.debug ? Polymer.debug.consumeLogs : false)
-        },
-
+        
         // Returns the color associated with thecolor setting
         getColor: type => `font-weight: normal; color:${PolymerTrace.debug.colors[type]}`,
     }
@@ -149,7 +157,7 @@
         // Prints the given item as a collapsible group with
         // its children
         const _printItem = item => {
-            if (!settings.enabled) return
+            if (!settings.printTrace) return
             if (stack.length > 0) return
 
             const threshold = settings.threshold
@@ -351,9 +359,46 @@
         })
     }
 
-    // Applies the debutg logic to the particular Polymer Template
-    const applyDebug = temp => {
+    // Adds observers to the given Polymer template
+    // to watch and validate the given properties types
+    const initPropertyValidation = temp => {
+        temp.observers = temp.observers || []
+        
+        Object.keys(temp.properties).forEach(name => {
+            const observerName = `__polymertrace__${name}__validationobserver`
+            temp.observers.push(`${observerName}(${name})`)
 
+            const property = temp.properties[name]
+            const type = property.type || null
+            const validator = property.isValid || null
+            temp[observerName] = val => {
+                if (!settings.validateValue) return
+
+                const valid = validateValue(val, type, validator)
+                if (!valid) console.error(`property "${name}" on "${temp.is}" set to`, val, `but was expected to be ${type}`)
+            }
+        })
+    }
+
+    // returns whether or not the give value is of the given type
+    // or passes the validator
+    const validateValue = (val, type, validator) => {
+        let passes = false
+
+        if (validator) passes = validator(val, type)
+        else if (type === Number) passes = typeof val === 'number'
+        else if (type === String) passes = typeof val === 'string'
+        else if (type === Array) passes = Array.isArray(val)
+        else passes = val instanceof type
+
+        return passes
+    }
+
+    // Applies the debutg logic to the particular Polymer Template
+    const initTrace = temp => {
+
+        // Create a handler for created, which can create
+        // surrogates for functions that require the instantiated object
         applySurrogate(temp, 'created', function(func, args) {
             applyDebounceSurrogate(temp.is, this)
             applyAsyncSurrogate(temp.is, this)
@@ -364,7 +409,11 @@
             stackTracer.end()
         })
 
+        initPropertyValidation(temp)
+
         Object.keys(temp).forEach(key => {
+            if (key === 'created') return
+
             let item = null
             try {
                 // TODO : remove this try / catch
@@ -411,7 +460,7 @@
             !util.testRegex(PolymerTrace.debug.exclude, elementName, false)
         ) {
             console.log(`applying to ${obj.is}`)
-            applyDebug(obj)
+            initTrace(obj)
         } else {
             console.log(`skipping ${obj.is}`)
         }
@@ -430,11 +479,13 @@ Polymer.debug = {
         
     include: [/.*/g],
     exclude: [/\/node_modules\//, /\/bower_components\//],
-        
+    
+    captureTrace: true,
     threshold: 1,
     includeStack: true,
     tallyCalls: true,
     consumeLogs: true,
+    validateProperties: true,
 
     colors: {
         light: '#90A4AE',
