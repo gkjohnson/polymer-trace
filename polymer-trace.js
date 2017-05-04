@@ -22,8 +22,8 @@
             return (Polymer.debug ? Polymer.debug.consumeLogs : false) && this.enabled
         },
 
-        get validateValue() {
-            return (Polymer.debug ? Polymer.debug.validateValue : false) && this.enabled
+        get validateProperties() {
+            return (Polymer.debug ? Polymer.debug.validateProperties : false) && this.enabled
         },
 
         get threshold() {
@@ -374,7 +374,7 @@
             const type = property.type || null
             const validator = property.isValid || null
             temp[observerName] = val => {
-                if (!settings.validateValue) return
+                if (!settings.validateProperties) return
 
                 const valid = validateValue(val, type, validator)
                 if (!valid) console.error(`property "${name}" on "${temp.is}" set to`, val, `but was expected to be ${type}`)
