@@ -4,6 +4,8 @@ A debugging library that can be grafted onto any page with Polymer Elements to e
 Surrogate functions are created that wrap the ones defined on registered Polymer elements, as well as for the following built in Polymer functions:
 - `async`
 - `debounce`
+- `addEventListener`
+- `Polymer.dom.flush`
 
 ## Use
 #### Loading it
@@ -44,6 +46,15 @@ Settings for Polymer-Trace live on `Polymer.debug` and can be used to control th
   // print messages. Disabling improves performance
   includeStack: true,
   
+  // Whether or not to print out the tally of different
+  // function calls over the last frame
+  tallyCalls: true,
+  
+  // Whether or not to consume log functions including 'log', 'error',
+  // 'warning', 'groupCollased', 'group', 'groupEnd', 'dir', 'time', 'timeEnd'
+  // to be wrapped up into the stack trace
+  consumeLogs: true,
+    
   // Colors to for printing
   colors: {
     light: '#90A4AE',
@@ -62,8 +73,6 @@ Settings for Polymer-Trace live on `Polymer.debug` and can be used to control th
 - Add option to automatically create observers for properties and validate their type with `joi`
 - Wrap more built in Polymer functions
   - `listen`
-  - `addEventListener`
 - If `includeStack` is enabled but the time threshold isn't long enough to display or it's a child, don't include it to improve perf
-- Wrap `console` functions so they can be included more cleanly in the trace
 - Figure out how to wrap getter/setter functions
 - Track down bugs related to wrapping some of the paper elements
