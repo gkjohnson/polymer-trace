@@ -480,7 +480,7 @@ Polymer.debug = {
     include: [/.*/g],
     exclude: [/\/node_modules\//, /\/bower_components\//],
     
-    captureTrace: true,
+    printTrace: true,
     threshold: 1,
     includeStack: true,
     tallyCalls: true,

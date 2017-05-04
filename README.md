@@ -45,7 +45,7 @@ Settings for Polymer-Trace live on `Polymer.debug` and can be used to control th
   exclude: [/\/node_modules\//, /\/bower_components\//],
   
   // Whether or not to capture the traces from Polymer functions
-  captureTrace: true,
+  printTrace: true,
   
   // Threshold in ms under which messages are not printed
   threshold: 1,
