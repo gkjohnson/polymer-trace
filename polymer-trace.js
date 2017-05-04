@@ -385,6 +385,8 @@
     // returns whether or not the give value is of the given type
     // or passes the validator
     const validateValue = (val, type, validator) => {
+        if(val == null) return true
+
         let passes = false
 
         if (validator) passes = validator(val, type)

@@ -4,10 +4,23 @@
 		<h2>[[computedText]]</h2>
 		<div>number: [[numVal]]</div>
 		<div>
+			<h3>prop1</h3>
+			<div>[[objectVal.prop1]]</div>
+			<h3>prop2</h3>
+			<div>[[objectVal.prop2]]</div>
+		</div>
+		<div>
 			<button on-click="_debounceButtonClickHandler">Run Debounce Function</button>
 		</div>
 		<div>
 			<button on-click="_asyncButtonClickHandler">Run Async Function</button>
+		</div>
+
+		<div>
+			<button on-click="_badObjButtonHandler">Set Bad Object</button>
+		</div>
+		<div>
+			<button on-click="_validObjButtonHandler">Set Valid Object</button>
 		</div>
 	</template>
 </dom-module>
@@ -29,6 +42,12 @@
 			numVal: {
 				type: Number,
 				value: 10
+			},
+
+			objectVal: {
+				type: Object,
+				value: null,
+				isValid: val => 'prop1' in val && 'prop2' in val
 			}
 		},
 
@@ -55,6 +74,14 @@
 
 		_asyncButtonClickHandler: function() {
 			this.async(() => console.log('debounced!'), 500)
+		},
+
+		_badObjButtonHandler: function() {
+			this.objectVal = { prop1: "prop-1", prop3: "prop-3" }
+		},
+
+		_validObjButtonHandler: function() {
+			this.objectVal = { prop1: "prop-1", prop2: "prop-2"}
 		},
 
 		/* Computed Properties */
