@@ -409,8 +409,6 @@
             stackTracer.end()
         })
 
-        initPropertyValidation(temp)
-
         Object.keys(temp).forEach(key => {
             if (key === 'created') return
 
@@ -429,6 +427,8 @@
 
             applySurrogate(temp, key)
         })
+
+        initPropertyValidation(temp)
     }
 
     /* Intialization */
