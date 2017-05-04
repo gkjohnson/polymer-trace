@@ -350,7 +350,9 @@
             const evname = args[0]
             
             args[1] = getSurrogate(args[1], function(func, args) {
+                stackTracer.begin(is, `on-${evname}-handler`)
                 func.call(this, ...args)
+                stackTracer.end()
             })
 
             stackTracer.begin(is, 'addEventListener')
