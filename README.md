@@ -24,6 +24,11 @@ Polymer-Trace will print out a collapsible polymer function call stack with timi
 
 ![example](/docs/example.png)
 
+#### Property Type Validation
+Property values are automatically validated against their types when they are set
+
+For more robust value validation, an additional functiona parameter `isValid` can be added to a property definition, which takes the set value and type of the property, and should return `true` or `false` to indicate whether ot not the value is valid
+
 #### Settings
 Settings for Polymer-Trace live on `Polymer.debug` and can be used to control the verbosity of the print statements. All settings can be changed during run time.
 
@@ -38,6 +43,9 @@ Settings for Polymer-Trace live on `Polymer.debug` and can be used to control th
   // Both the element name and script path are checked
   include: [/.*/g],
   exclude: [/\/node_modules\//, /\/bower_components\//],
+  
+  // Whether or not to capture the traces from Polymer functions
+  captureTrace: true,
   
   // Threshold in ms under which messages are not printed
   threshold: 1,
@@ -54,6 +62,9 @@ Settings for Polymer-Trace live on `Polymer.debug` and can be used to control th
   // 'warning', 'groupCollased', 'group', 'groupEnd', 'dir', 'time', 'timeEnd'
   // to be wrapped up into the stack trace
   consumeLogs: true,
+   
+  // Whether or not to print out type validation for Polymer properties
+  validateProperties: true,
     
   // Colors to for printing
   colors: {
@@ -70,7 +81,6 @@ Settings for Polymer-Trace live on `Polymer.debug` and can be used to control th
 
 ## TODOs
 - Traverse Polymer Behaviors so more function calls can be exposed
-- Add option to automatically create observers for properties and validate their type with `joi`
 - Wrap more built in Polymer functions
   - `listen`
 - If `includeStack` is enabled but the time threshold isn't long enough to display or it's a child, don't include it to improve perf
