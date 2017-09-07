@@ -86,3 +86,5 @@ Settings for Polymer-Trace live on `Polymer.debug` and can be used to control th
 - If `includeStack` is enabled but the time threshold isn't long enough to display or it's a child, don't include it to improve perf
 - Figure out how to wrap getter/setter functions
 - Track down bugs related to wrapping some of the paper elements
+- Polymer 2.x support
+- temporarily wrap functions like `requestAnimationFrame` or `setInterval` so we can see the impact
