@@ -1,4 +1,5 @@
 <dom-module is="test-element">
+	<link rel="import" type="css" href="../styles.css">
 	<template>
 		<h1>[[text]]</h1>
 		<h2>[[computedText]]</h2>
@@ -9,7 +10,7 @@
 			<h3>prop2</h3>
 			<div>[[objectVal.prop2]]</div>
 		</div>
-		<div>
+		<div class='red'>
 			<button on-click="_debounceButtonClickHandler">Run Debounce Function</button>
 		</div>
 		<div>

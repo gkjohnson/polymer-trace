@@ -1,10 +1,10 @@
 {
-  "name": "polymer-trace",
-  "version": "0.0.1",
-  "description": "A debugging library that can be grafted onto any page with Polymer Elements to expose all the functions being called on Polymer elements over the course of its lifetime",
+  "name": "@gkjohnson/polymer-trace",
+  "version": "1.0.0",
+  "description": "Tool for tracing Polymer elements' lifecycles",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "static-server"
+    "serve": "static-server"
   },
   "repository": {
     "type": "git",
@@ -23,7 +23,11 @@
     "Cycle"
   ],
   "author": "Garrett Johnson <garrett.kjohnson@gmail.com>",
-  "license": "ISC",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/gkjohnson/polymer-trace/issues"
+  },
+  "homepage": "https://github.com/gkjohnson/polymer-trace#readme",
   "devDependencies": {
     "static-server": "^2.0.4"
   }
