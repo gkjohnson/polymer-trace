@@ -7,6 +7,13 @@ Surrogate functions are created that wrap the ones defined on registered Polymer
 - `addEventListener`
 - `Polymer.dom.flush`
 
+## Installation
+The repo is provided on npm [here](https://www.npmjs.com/package/@gkjohnson/polymer-trace).
+
+```
+npm install @gkjohnson/polymer-trace
+```
+
 ## Use
 #### Loading it
 Include the `polymer-trace.js` or `polymer-trace.html` file at the top of the page before any other elements have loaded:
