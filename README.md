@@ -1,4 +1,7 @@
 # polymer-trace
+
+[![npm version](https://badge.fury.io/js/%40gkjohnson%2Fpolymer-trace.svg)](https://www.npmjs.com/package/@gkjohnson/polymer-trace)
+
 A debugging library that can be grafted onto any page with Polymer Elements to expose all the functions being called on Polymer elements over the course of its lifetime
 
 Surrogate functions are created that wrap the ones defined on registered Polymer elements, as well as for the following built in Polymer functions:
@@ -6,13 +9,6 @@ Surrogate functions are created that wrap the ones defined on registered Polymer
 - `debounce`
 - `addEventListener`
 - `Polymer.dom.flush`
-
-## Installation
-The repo is provided on npm [here](https://www.npmjs.com/package/@gkjohnson/polymer-trace).
-
-```
-npm install @gkjohnson/polymer-trace
-```
 
 ## Use
 #### Loading it
